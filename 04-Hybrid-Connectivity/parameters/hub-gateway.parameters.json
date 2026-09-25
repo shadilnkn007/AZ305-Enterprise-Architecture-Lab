@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "centralindia"
+    },
+    "resourceGroupName": {
+      "value": "rg-az305-hub-ci"
+    },
+    "gatewayName": {
+      "value": "vpngw-az305-hub-ci"
+    },
+    "vnetName": {
+      "value": "vnet-az305-hub-ci"
+    },
+    "publicIpName": {
+      "value": "pip-vpngw-az305-hub-ci"
+    },
+    "gatewaySku": {
+      "value": "VpnGw1AZ"
+    }
+  }
+}
