@@ -73,7 +73,7 @@ You need:
 * Permission to assign Azure Policy at the Management Group scope
 * Azure CLI
 * Bicep
-* Git - download git from < https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/Git-2.55.0.5-64-bit.exe > and install it, later on use command < git clone https://github.com/<your-repository>/AZ305-Enterprise-Architecture-Lab.git > and < cd AZ305-Enterprise-Architecture-Lab > from Administrative powershell ISE
+* Git - download git from < https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/Git-2.55.0.5-64-bit.exe > and install it, later on use command < git clone https://github.com/shadilnkn007/AZ305-Enterprise-Architecture-Lab.git > and < cd AZ305-Enterprise-Architecture-Lab > from Administrative powershell ISE
 
 Check Azure CLI:
 
