@@ -596,210 +596,523 @@ vnet-az305-nonprod-ci
 
 ---
 
-# 21. Create VNet Peerings
+# 21. Create VNet Peerings Using Azure Portal
 
-After all VNets exist, create the hub-to-spoke peerings.
+In this lab, VNet peering will be configured manually through the **Azure Portal**.
 
-The final relationships should be:
+This is intentional.
 
-```text
-Hub-CI
-  |
-  +---- Prod-CI
-  |
-  +---- NonProd-CI
+The purpose is to allow you to understand the individual peering settings and the relationship between the hub and spoke networks.
 
-Hub-SI
-  |
-  +---- Prod-SI
-```
-
-Each peering requires a relationship in **both directions**.
-
-For example:
-
-```text
-Hub-CI
-   |
-   +---- Peering ----> Prod-CI
-   |
-   <---- Peering ----+
-                    Prod-CI
-```
-
-This will be automated in the next version of the deployment script.
+Azure VNet peering is configured as a relationship between two VNets. For cross-subscription peering, you must have the appropriate permissions in both subscriptions.
 
 ---
 
-# 22. Validate the Architecture
+## 21.1 Peering Relationships
 
-After peering is created, verify the relationships:
-
-```powershell
-az network vnet peering list `
-    --resource-group rg-az305-hub-ci `
-    --vnet-name vnet-az305-hub-ci `
-    --output table
-```
-
-You should eventually see:
+Create the following peering relationships:
 
 ```text
-Prod-CI
-NonProd-CI
+Central India Hub
+    |
+    +---- Prod-CI
+    |
+    +---- NonProd-CI
+
+
+South India Hub
+    |
+    +---- Prod-SI
 ```
 
-Similarly:
+Do **not** create direct peering between:
 
-```powershell
-az network vnet peering list `
-    --resource-group rg-az305-hub-si `
-    --vnet-name vnet-az305-hub-si `
-    --output table
+```text
+Prod-CI <----> Prod-SI
+```
+
+or:
+
+```text
+Prod-CI <----> NonProd-CI
+```
+
+The hub is intended to be the central networking boundary.
+
+---
+
+# 21.2 Central India Hub → Production CI
+
+Open the Azure Portal.
+
+Navigate to:
+
+```text
+Virtual networks
+    >
+vnet-az305-hub-ci
+    >
+Peerings
+    >
++ Add
+```
+
+Configure the peering as follows.
+
+### This virtual network
+
+| Setting                                                                          | Value                    |
+| -------------------------------------------------------------------------------- | ------------------------ |
+| Peering link name                                                                | `peer-hub-ci-to-prod-ci` |
+| Allow `vnet-az305-hub-ci` to access the peered VNet                              | Enabled                  |
+| Allow forwarded traffic from the peered VNet                                     | Enabled                  |
+| Allow gateway or route server in this VNet to forward traffic to the peered VNet | **Enabled**              |
+| Enable this VNet to use the remote VNet's gateway or route server                | **Disabled**             |
+
+### Remote virtual network
+
+Select:
+
+```text
+vnet-az305-prod-ci
+```
+
+from:
+
+```text
+AZ305-Production
+```
+
+Configure:
+
+| Setting                                                                          | Value                    |
+| -------------------------------------------------------------------------------- | ------------------------ |
+| Peering link name                                                                | `peer-prod-ci-to-hub-ci` |
+| Allow the peered VNet to access `vnet-az305-hub-ci`                              | Enabled                  |
+| Allow forwarded traffic from the peered VNet                                     | Enabled                  |
+| Allow gateway or route server in the peered VNet to forward traffic to this VNet | **Disabled**             |
+| Enable the peered VNet to use `vnet-az305-hub-ci`'s gateway or route server      | **Enabled**              |
+
+> **Important:** Gateway transit settings are being configured because the Central India hub will later contain the hybrid VPN Gateway. The spoke will eventually use the hub gateway rather than having its own VPN Gateway.
+
+Click:
+
+**Add**
+
+---
+
+# 21.3 Central India Hub → Non-Production CI
+
+Navigate to:
+
+```text
+Virtual networks
+    >
+vnet-az305-hub-ci
+    >
+Peerings
+    >
++ Add
+```
+
+Configure:
+
+### This virtual network
+
+| Setting                                       | Value                       |
+| --------------------------------------------- | --------------------------- |
+| Peering link name                             | `peer-hub-ci-to-nonprod-ci` |
+| Allow access                                  | Enabled                     |
+| Allow forwarded traffic                       | Enabled                     |
+| Allow gateway/route server to forward traffic | **Enabled**                 |
+| Use remote gateway/route server               | **Disabled**                |
+
+### Remote virtual network
+
+Select:
+
+```text
+vnet-az305-nonprod-ci
+```
+
+from:
+
+```text
+AZ305-NonProduction
+```
+
+Configure:
+
+| Setting                                       | Value                       |
+| --------------------------------------------- | --------------------------- |
+| Peering link name                             | `peer-nonprod-ci-to-hub-ci` |
+| Allow access                                  | Enabled                     |
+| Allow forwarded traffic                       | Enabled                     |
+| Allow gateway/route server to forward traffic | **Disabled**                |
+| Use remote gateway/route server               | **Enabled**                 |
+
+Click:
+
+**Add**
+
+---
+
+# 21.4 South India Hub → Production SI
+
+Navigate to:
+
+```text
+Virtual networks
+    >
+vnet-az305-hub-si
+    >
+Peerings
+    >
++ Add
+```
+
+Configure:
+
+### This virtual network
+
+| Setting                                       | Value                    |
+| --------------------------------------------- | ------------------------ |
+| Peering link name                             | `peer-hub-si-to-prod-si` |
+| Allow access                                  | Enabled                  |
+| Allow forwarded traffic                       | Enabled                  |
+| Allow gateway/route server to forward traffic | **Enabled**              |
+| Use remote gateway/route server               | **Disabled**             |
+
+### Remote virtual network
+
+Select:
+
+```text
+vnet-az305-prod-si
+```
+
+from:
+
+```text
+AZ305-Production
+```
+
+Configure:
+
+| Setting                                       | Value                    |
+| --------------------------------------------- | ------------------------ |
+| Peering link name                             | `peer-prod-si-to-hub-si` |
+| Allow access                                  | Enabled                  |
+| Allow forwarded traffic                       | Enabled                  |
+| Allow gateway/route server to forward traffic | **Disabled**             |
+| Use remote gateway/route server               | **Enabled**              |
+
+Click:
+
+**Add**
+
+---
+
+# 21.5 Why Are Gateway Options Different?
+
+The important concept is that the **hub owns the gateway**.
+
+The architecture is:
+
+```text
+                    Central Hub
+                         |
+                    VPN Gateway
+                         |
+          +--------------+--------------+
+          |                             |
+       Prod-CI                       NonProd-CI
+```
+
+The spokes should therefore be configured to use the hub's gateway.
+
+This is called **gateway transit**.
+
+The relevant relationship is:
+
+```text
+Hub
+ |
+ | allow gateway transit
+ v
+Spoke
+ |
+ | use remote gateway
+ v
+Hub VPN Gateway
+```
+
+Microsoft documents gateway transit as the mechanism that allows a peered VNet to use the VPN gateway in another VNet. ([learn.microsoft.com](https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-peering-gateway-transit?utm_source=chatgpt.com))
+
+---
+
+# 21.6 Important: Gateway Transit Will Not Work Yet
+
+At this stage, there is **no VPN Gateway deployed**.
+
+Therefore, students may see gateway-related configuration options but there is no actual gateway to use yet.
+
+That is expected.
+
+The VPN Gateway will be introduced in:
+
+**Module 04 — Hybrid Connectivity**
+
+The sequence is intentionally:
+
+```text
+Module 03
+Create VNets
+     |
+     v
+Create Peering
+     |
+     v
+Module 04
+Deploy VPN Gateway
+     |
+     v
+Configure Gateway Transit
+     |
+     v
+Connect Simulated On-Premises
+```
+
+---
+
+# 22. Validate the Peerings
+
+After creating the peerings, open:
+
+```text
+Virtual networks
+    >
+vnet-az305-hub-ci
+    >
+Peerings
+```
+
+You should see:
+
+```text
+peer-hub-ci-to-prod-ci
+peer-hub-ci-to-nonprod-ci
+```
+
+Both should eventually show:
+
+```text
+Peering status: Connected
+```
+
+---
+
+## Validate Production CI
+
+Open:
+
+```text
+vnet-az305-prod-ci
+    >
+Peerings
 ```
 
 Expected:
 
 ```text
+peer-prod-ci-to-hub-ci
+```
+
+Status:
+
+```text
+Connected
+```
+
+---
+
+## Validate Non-Production CI
+
+Open:
+
+```text
+vnet-az305-nonprod-ci
+    >
+Peerings
+```
+
+Expected:
+
+```text
+peer-nonprod-ci-to-hub-ci
+```
+
+Status:
+
+```text
+Connected
+```
+
+---
+
+## Validate South India
+
+Open:
+
+```text
+vnet-az305-hub-si
+    >
+Peerings
+```
+
+Expected:
+
+```text
+peer-hub-si-to-prod-si
+```
+
+Then verify:
+
+```text
+vnet-az305-prod-si
+    >
+Peerings
+```
+
+Expected:
+
+```text
+peer-prod-si-to-hub-si
+```
+
+---
+
+# 23. Peering Validation Checklist
+
+Before continuing, confirm:
+
+| Peering              | Expected Status |
+| -------------------- | --------------- |
+| Hub-CI ↔ Prod-CI     | Connected       |
+| Hub-CI ↔ NonProd-CI  | Connected       |
+| Hub-SI ↔ Prod-SI     | Connected       |
+| Prod-CI ↔ Prod-SI    | Not configured  |
+| Prod-CI ↔ NonProd-CI | Not configured  |
+
+---
+
+# 24. Architecture Exercise
+
+Now consider the following.
+
+### Scenario
+
+The production application in Central India needs to communicate with a service in the Central India hub.
+
+Which path should the traffic take?
+
+```text
+Prod-CI
+   |
+   v
+Hub-CI
+   |
+   v
+Shared Network Service
+```
+
+---
+
+### Scenario
+
+The production application in South India needs to communicate with the South India hub.
+
+Expected:
+
+```text
 Prod-SI
-```
-
----
-
-# 23. Architecture Decision Exercise
-
-Before moving to the next module, answer these questions.
-
-### Question 1
-
-Why isn't the production application deployed directly into the hub?
-
----
-
-### Question 2
-
-Why do Production and Non-Production use separate subscriptions?
-
----
-
-### Question 3
-
-Why do we use a separate hub for South India?
-
----
-
-### Question 4
-
-Why do all VNets have non-overlapping address spaces?
-
----
-
-### Question 5
-
-Why isn't `Prod-CI` directly peered with `NonProd-CI`?
-
----
-
-### Question 6
-
-Where should Azure Firewall eventually be deployed?
-
----
-
-### Question 7
-
-Where should the VPN Gateway eventually be deployed?
-
----
-
-### Question 8
-
-Why don't we deploy a VPN Gateway in every spoke?
-
-Microsoft's hub-spoke guidance describes using the centralized hub gateway for spoke connectivity rather than deploying a gateway in every spoke. Gateway transit can allow spokes to use the hub's VPN gateway.
-
----
-
-# 24. Expected Final State
-
-At the end of this module:
-
-```text
-                    Azure
-                      |
-          +-----------+-----------+
-          |                       |
-  AZ305-Connectivity       Workload Subscriptions
-          |                       |
-    +-----+-----+          +------+------+
-    |           |          |             |
- Hub-CI       Hub-SI    Production   NonProduction
-    |           |          |             |
- +--+--+        |       +--+--+          |
- |     |        |       |     |          |
-Prod  NonProd  Prod   Prod-CI Prod-SI  NonProd-CI
- CI      CI     SI
-```
-
-Network ranges:
-
-```text
-On-Premises     10.100.0.0/16
-
-Hub-CI          10.10.0.0/16
-Prod-CI         10.11.0.0/16
-NonProd-CI      10.12.0.0/16
-
-Hub-SI          10.20.0.0/16
-Prod-SI         10.21.0.0/16
-```
-
----
-
-# 25. What Comes Next?
-
-This module establishes the network foundation.
-
-The next modules will progressively add:
-
-```text
-Module 03
-Hub-Spoke Network
-       |
-       v
-Module 04
-Hybrid Connectivity
-       |
-       v
-Module 05
-Network Security
-       |
-       v
-Module 06
-Application Platform
-```
-
-The important architectural progression is:
-
-```text
-Networks
    |
    v
-Connectivity
-   |
-   v
-Security
-   |
-   v
-Application
+Hub-SI
 ```
-
-Do not deploy Azure Firewall, VPN Gateway, Application Gateway or workloads in this module unless specifically instructed.
 
 ---
 
-# Module Complete
+### Scenario
 
-You have established the enterprise hub-spoke network foundation.
+A workload in `Prod-CI` needs to communicate directly with `NonProd-CI`.
 
-The next module will connect the simulated on-premises environment created in Module 02 to the Central India hub using **site-to-site VPN connectivity**.
+There is currently no direct peering.
+
+Ask:
+
+> Should we create direct peering, or should the traffic be routed through a centralized network security service?
+
+This decision will be addressed later when we introduce:
+
+* Azure Firewall
+* UDRs
+* Network security controls
+
+Do not create additional peerings just to make the connectivity work.
+
+---
+
+# 25. Important Design Principle
+
+Do not assume that:
+
+```text
+Hub ↔ Spoke
+```
+
+automatically means:
+
+```text
+Spoke ↔ Spoke
+```
+
+Azure VNet peering is **non-transitive**.
+
+The architecture must explicitly define how traffic should flow between networks.
+
+This is one of the important decisions you should be able to explain as an Azure Solution Architect.
+
+---
+
+# Module 03 Peering Complete
+
+The network now has:
+
+```text
+                    Hub-CI
+                   /      \
+                  /        \
+             Prod-CI      NonProd-CI
+
+
+                    Hub-SI
+                       |
+                    Prod-SI
+```
+
+The next module will introduce the connectivity layer:
+
+**Module 04 — Hybrid Connectivity**
+
+There we will connect:
+
+```text
+Simulated On-Premises
+        |
+        | S2S VPN
+        v
+Central India Hub
+```
+
+and introduce the VPN Gateway and gateway transit configuration.
