@@ -570,21 +570,21 @@ contoso.local
 
 ## 24. Configure DNS
 
-The Entra Connect server must use the Domain Controller as its DNS server.
+The simulated on-premises VNet is configured to use:
 
-First obtain the private IP of:
+10.100.1.10
 
-```text
+as its custom DNS server.
+
+This is the private IP address of:
+
 ONPREM-DC01
-```
 
-Run:
+Because the DNS configuration is defined at the VNet level, both Windows servers inherit the DNS configuration.
+
+Restart the Entra Connect server after deployment if necessary.
+
+Validate from ONPREM-ADSYNC01:
 
 ```powershell
-az vm list-ip-addresses `
-  --resource-group rg-az305-onprem-ci `
-  --name ONPREM-DC01 `
-  -o table
-```
-
-Record the
+nslookup contoso.local
