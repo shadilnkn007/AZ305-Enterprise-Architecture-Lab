@@ -1,15 +1,20 @@
-Module 02 — Hybrid Identity
-AZ-305 Enterprise Architecture Lab — Version 2
-1. Scenario
+# Module 02 — Hybrid Identity
+
+**AZ-305 Enterprise Architecture Lab — Version 2**
+
+---
+
+## 1. Scenario
 
 Contoso currently has an on-premises Active Directory environment.
 
 The company wants to extend its identity platform to Microsoft Azure and Microsoft Entra ID.
 
-For this training lab, the on-premises environment will be simulated inside Azure.
+For this training lab, the on-premises environment will be **simulated inside Azure**.
 
-You will build:
+### Target architecture
 
+```text
 SIMULATED ON-PREMISES
         |
         +-- Active Directory Domain Services
@@ -19,23 +24,28 @@ SIMULATED ON-PREMISES
         +-- Microsoft Entra Connect Sync
         |
         +-- VPN Gateway
+```
 
 The VPN connection will be configured in a later module.
 
-2. What You Will Build
+---
+
+## 2. What You Will Build
 
 In this module you will create:
 
-An on-premises VNet
-A Domain Controller
-Active Directory Domain Services
-DNS
-A second Windows Server for Microsoft Entra Connect
-A test Active Directory user set
-A hybrid identity synchronization configuration
+* An on-premises VNet
+* A Domain Controller
+* Active Directory Domain Services
+* DNS
+* A second Windows Server for Microsoft Entra Connect
+* Test Active Directory users
+* Microsoft Entra Connect Sync
+* Hybrid identity synchronization
 
-The target architecture is:
+### Target identity architecture
 
+```text
                          MICROSOFT ENTRA ID
                                 ^
                                 |
@@ -50,134 +60,200 @@ The target architecture is:
                         ONPREM-DC01
                          /          \
                        AD DS        DNS
-3. Azure Location
+```
 
-The simulated on-premises environment is deployed in:
+---
 
-Central India
+## 3. Azure Region
+
+The simulated on-premises environment will be deployed in:
+
+**Central India**
 
 Azure region name:
 
+```text
 centralindia
-4. Subscription
+```
+
+---
+
+## 4. Azure Subscription
 
 Deploy this module into:
 
-AZ305-Connectivity
+**AZ305-Connectivity**
 
 This is intentional.
 
-The simulated on-premises environment is part of the connectivity/hybrid architecture rather than the Production workload.
+The simulated on-premises environment represents the hybrid connectivity side of the enterprise architecture rather than the production application workload.
 
-5. Network
+---
+
+## 5. Network
 
 The simulated on-premises VNet will use:
 
-VNet:
-10.100.0.0/16
+| Component     | Address         |
+| ------------- | --------------- |
+| VNet          | `10.100.0.0/16` |
+| Server subnet | `10.100.1.0/24` |
 
-Server subnet:
+The server subnet will contain:
 
-10.100.1.0/24
-
-The subnet will contain:
-
+```text
 ONPREM-DC01
 ONPREM-ADSYNC01
+```
 
-Later, a VPN Gateway will be connected to this VNet.
+A VPN Gateway will be added to this environment in a later module.
 
-6. Servers
+---
+
+## 6. Servers
 
 Two Windows Server 2022 virtual machines will be created.
 
-Server	Purpose
-ONPREM-DC01	AD DS + DNS
-ONPREM-ADSYNC01	Microsoft Entra Connect Sync
+| Server            | Purpose                      |
+| ----------------- | ---------------------------- |
+| `ONPREM-DC01`     | AD DS + DNS                  |
+| `ONPREM-ADSYNC01` | Microsoft Entra Connect Sync |
 
-Microsoft currently recommends Windows Server 2025 or Windows Server 2022 for Microsoft Entra Connect Sync. The Connect server must be domain joined and use the full GUI installation; Server Core isn't supported for Connect Sync.
+Microsoft currently recommends Windows Server 2025 or Windows Server 2022 for Microsoft Entra Connect Sync.
 
-7. Important Security Decision
+The Connect Sync server must be domain joined and use the full GUI installation.
 
-The Windows servers will not have public IP addresses.
+---
+
+## 7. Security Decision
+
+The Windows servers will **not have public IP addresses**.
 
 Do not create public RDP access to:
 
+```text
 ONPREM-DC01
 ONPREM-ADSYNC01
+```
 
-The initial Windows configuration can be performed using Azure Run Command.
+Initial configuration will use **Azure Run Command**.
 
-Azure Run Command uses the Azure VM agent to execute PowerShell inside a Windows VM and can be used even when normal RDP access isn't available.
+Azure Run Command allows PowerShell commands to be executed inside an Azure VM through the VM agent without requiring normal RDP connectivity.
 
-Later, if required, Azure Bastion can be introduced as the secure administrative access mechanism. Bastion allows RDP to a VM through the Azure portal without requiring a public IP on the VM.
+Later in the lab, we may introduce **Azure Bastion** as the secure administrative access mechanism.
 
-8. Prerequisites
+---
+
+# Part A — Deploy the Infrastructure
+
+## 8. Prerequisites
 
 Before starting this module:
 
-Module 01 must be completed.
-You must have access to the Connectivity subscription.
-Azure CLI must be installed.
-Bicep must be available.
-You must have permission to deploy resources.
-You must know your Connectivity subscription ID.
+* Module 01 must be completed.
+* You must have access to the Connectivity subscription.
+* Azure CLI must be installed.
+* Bicep must be available.
+* You must have permission to deploy resources.
+* You must know your Connectivity subscription ID.
 
-Verify your Azure login:
+### Verify Azure CLI
 
+```powershell
+az version
+```
+
+### Verify Bicep
+
+```powershell
+az bicep version
+```
+
+### Login to Azure
+
+```powershell
 az login
+```
 
-List subscriptions:
+### List subscriptions
 
+```powershell
 az account list -o table
+```
 
-Set the Connectivity subscription:
+### Select the Connectivity subscription
 
+```powershell
 az account set --subscription "<CONNECTIVITY-SUBSCRIPTION-ID>"
+```
 
-Verify:
+### Verify the selected subscription
 
+```powershell
 az account show -o table
-9. Review the Bicep Files
+```
+
+---
+
+## 9. Review the Bicep Files
 
 The module contains:
 
+```text
 bicep/
 ├── main.bicep
 ├── network.bicep
 └── vm.bicep
+```
 
-main.bicep is the deployment entry point.
+### `main.bicep`
 
-network.bicep creates the simulated on-premises VNet.
+Deployment entry point.
 
-vm.bicep creates the two Windows Server VMs.
+### `network.bicep`
 
-10. Validate the Bicep Template
+Creates the simulated on-premises VNet and subnet.
+
+### `vm.bicep`
+
+Creates the two Windows Server VMs.
+
+---
+
+## 10. Validate the Bicep Template
 
 Move into the module:
 
+```powershell
 cd 02-Hybrid-Identity
+```
 
-Build the Bicep file:
+Run:
 
+```powershell
 az bicep build --file bicep/main.bicep
+```
 
-There should be no compilation errors.
+The command should complete without compilation errors.
 
-11. Preview the Deployment
+---
 
-Before deployment, run:
+## 11. Preview the Deployment
 
+Before deploying, use `what-if`.
+
+```powershell
 az deployment sub what-if `
   --location centralindia `
   --template-file bicep/main.bicep `
   --parameters @parameters.json
+```
 
-Review the proposed resources.
+Review the proposed changes.
 
-You should see:
+You should see resources similar to:
 
+```text
 Resource Group
 Virtual Network
 Subnet
@@ -185,563 +261,330 @@ ONPREM-DC01 NIC
 ONPREM-ADSYNC01 NIC
 ONPREM-DC01 VM
 ONPREM-ADSYNC01 VM
-12. Deploy the Infrastructure
+```
+
+---
+
+## 12. Deploy the Infrastructure
 
 You will need to supply a secure administrator password.
 
-Do not commit the password to GitHub.
+**Do not store the password in GitHub.**
 
-For this lab, use a password that meets Azure's Windows VM password requirements.
+For example:
 
-Deploy:
-
+```powershell
 az deployment sub create `
   --name az305-hybrid-identity `
   --location centralindia `
   --template-file bicep/main.bicep `
   --parameters @parameters.json `
   --parameters adminPassword="<YOUR-PASSWORD>"
+```
 
 Replace:
 
+```text
 <YOUR-PASSWORD>
+```
 
 with your actual password.
 
-Do not put this password into:
+> **Security note:** Avoid committing passwords, secrets, keys or tokens to the GitHub repository.
 
-parameters.json
+---
 
-and do not commit it to GitHub.
-
-13. Validate the Deployment
+## 13. Validate the Deployment
 
 Check the resource group:
 
+```powershell
 az group show `
   --name rg-az305-onprem-ci `
   -o table
+```
 
-List the VMs:
+List the virtual machines:
 
+```powershell
 az vm list `
   --resource-group rg-az305-onprem-ci `
   --show-details `
   -o table
+```
 
 Expected:
 
+```text
 Name
 -------------------
 ONPREM-DC01
 ONPREM-ADSYNC01
-14. Check the Private IP Addresses
+```
+
+---
+
+## 14. Find the Domain Controller Private IP
 
 Run:
 
+```powershell
 az vm list-ip-addresses `
   --resource-group rg-az305-onprem-ci `
+  --name ONPREM-DC01 `
   -o table
+```
 
-Record the private IP address of:
+Record the **private IP address**.
 
+You will need it when configuring DNS on `ONPREM-ADSYNC01`.
+
+---
+
+# Part B — Configure Active Directory
+
+## 15. Configure the Domain Controller
+
+The first server will become the Domain Controller:
+
+```text
 ONPREM-DC01
+```
 
-You will need this address when configuring DNS on the Entra Connect server.
+The domain will be:
 
-15. Configure the Domain Controller
-
-We will now configure:
-
-ONPREM-DC01
-
-as the Domain Controller.
-
-The server will become:
-
-Domain:
+```text
 contoso.local
+```
 
-NetBIOS:
+NetBIOS name:
+
+```text
 CONTOSO
-16. Run the AD DS Installation Script
+```
+
+The Domain Controller will also provide DNS.
+
+---
+
+## 16. Install AD DS
 
 The repository contains:
 
+```text
 scripts/Install-ADDS.ps1
+```
 
-The script contains:
+The script installs:
 
-Install-WindowsFeature `
-    -Name AD-Domain-Services `
-    -IncludeManagementTools
+* Active Directory Domain Services
+* DNS
+* A new AD forest
 
-Import-Module ADDSDeployment
+### Using Azure Portal
 
-Install-ADDSForest `
-    -DomainName "contoso.local" `
-    -DomainNetbiosName "CONTOSO" `
-    -InstallDns `
-    -Force
-17. Execute the Script
+Go to:
 
-You can use Azure Portal:
-
-Virtual Machine → ONPREM-DC01 → Run command
+**Azure Portal → Virtual Machines → ONPREM-DC01**
 
 Select:
 
-RunPowerShellScript
+**Operations → Run Command**
+
+Select:
+
+**RunPowerShellScript**
 
 Paste the contents of:
 
+```text
 scripts/Install-ADDS.ps1
+```
 
-and select:
+Then select:
 
-Run
+**Run**
 
-Azure Run Command executes the PowerShell script through the VM agent and returns the output.
+---
 
-Alternatively, from Azure CLI:
+## 17. Alternative — Use Azure CLI
 
+You can also execute the script using:
+
+```powershell
 az vm run-command invoke `
   --resource-group rg-az305-onprem-ci `
   --name ONPREM-DC01 `
   --command-id RunPowerShellScript `
   --scripts @scripts/Install-ADDS.ps1
-18. Wait for the Restart
+```
 
-The server will restart during forest creation.
+The server will restart during the domain controller installation.
 
-Wait until the VM reports:
+---
 
-PowerState/running
+## 18. Wait for the Restart
 
-Check:
+Check the VM state:
 
+```powershell
 az vm get-instance-view `
   --resource-group rg-az305-onprem-ci `
   --name ONPREM-DC01 `
   --query "instanceView.statuses[?starts_with(code, 'PowerState/')].displayStatus" `
   -o tsv
+```
 
 Expected:
 
+```text
 VM running
-19. Validate Active Directory
+```
 
-Use Run Command again.
+---
 
-Run:
+## 19. Validate Active Directory
 
+Run the following through Run Command:
+
+```powershell
 Get-ADDomain
+```
 
-Expected information should include:
+You should see information including:
 
+```text
 DNSRoot:
 contoso.local
 
 NetBIOSName:
 CONTOSO
+```
 
 Then:
 
+```powershell
 Get-ADForest
+```
 
 Expected:
 
+```text
 Name:
 contoso.local
-20. Validate DNS
+```
+
+---
+
+## 20. Validate DNS
 
 Run:
 
+```powershell
 Get-Service DNS
+```
 
 Expected:
 
-Status:
+```text
+Status
+------
 Running
+```
 
 Then:
 
+```powershell
 Get-DnsServerZone
+```
 
-You should see the:
+You should see:
 
+```text
 contoso.local
+```
 
-DNS zone.
+---
 
-21. Create Test Users
+# Part C — Create Test Users
+
+## 21. Create Test Users
 
 The repository contains:
 
+```text
 scripts/Create-TestUsers.ps1
+```
 
-Run it on:
+Run the script on:
 
+```text
 ONPREM-DC01
+```
 
 using Azure Run Command.
 
 The script creates:
 
+```text
 alice
 bob
+```
 
-inside the Active Directory domain.
+---
 
-Validate:
+## 22. Validate the Users
 
+Run:
+
+```powershell
 Get-ADUser -Filter * |
     Select-Object Name, UserPrincipalName
+```
 
 You should see the test users.
 
-22. Configure ONPREM-ADSYNC01
+---
 
-The next step is to configure:
+# Part D — Configure Microsoft Entra Connect
 
+## 23. Configure `ONPREM-ADSYNC01`
+
+The second server will become:
+
+```text
 ONPREM-ADSYNC01
+```
 
-as the Microsoft Entra Connect Sync server.
+It will run:
 
-The server must be joined to:
+**Microsoft Entra Connect Sync**
 
+The server must first be joined to:
+
+```text
 contoso.local
+```
 
-before installing Microsoft Entra Connect Sync.
+---
 
-23. Configure DNS on ONPREM-ADSYNC01
+## 24. Configure DNS
 
-The server must use the Domain Controller as its DNS server.
+The Entra Connect server must use the Domain Controller as its DNS server.
 
 First obtain the private IP of:
 
+```text
 ONPREM-DC01
+```
 
-using:
+Run:
 
+```powershell
 az vm list-ip-addresses `
   --resource-group rg-az305-onprem-ci `
   --name ONPREM-DC01 `
   -o table
+```
 
-Record the private IP.
-
-Then configure the network interface of:
-
-ONPREM-ADSYNC01
-
-to use the Domain Controller as its DNS server.
-
-In the Azure Portal:
-
-Virtual Machine → Networking → Network Interface
-
-Then:
-
-DNS servers → Custom
-
-Enter:
-
-<PRIVATE-IP-OF-ONPREM-DC01>
-
-Save the change.
-
-Restart:
-
-az vm restart `
-  --resource-group rg-az305-onprem-ci `
-  --name ONPREM-ADSYNC01
-24. Verify DNS from ONPREM-ADSYNC01
-
-Run:
-
-nslookup contoso.local
-
-The DNS server shown should be:
-
-ONPREM-DC01
-
-Then:
-
-nslookup ONPREM-DC01
-
-The name should resolve to the Domain Controller's private IP.
-
-If DNS does not work, stop here and fix DNS before proceeding.
-
-25. Join ONPREM-ADSYNC01 to the Domain
-
-Using Run Command, execute:
-
-Add-Computer `
-  -DomainName "contoso.local" `
-  -Credential (Get-Credential) `
-  -Restart
-
-When prompted, provide the appropriate domain administrator credentials.
-
-After the restart, verify that the server is domain joined.
-
-Run:
-
-(Get-CimInstance Win32_ComputerSystem).Domain
-
-Expected:
-
-contoso.local
-26. Install Microsoft Entra Connect Sync
-
-Do not download an old installer from a random website.
-
-The current Microsoft Entra Connect Sync installation package is provided through the Microsoft Entra admin center. Microsoft currently requires synchronization environments to be on version 2.5.79.0 or later by September 30, 2026.
-
-On:
-
-ONPREM-ADSYNC01
-
-open a browser and sign in to the Microsoft Entra admin center.
-
-Download the current:
-
-Microsoft Entra Connect Sync
-
-installer.
-
-27. Microsoft Entra Connect Configuration
-
-Run the installer.
-
-For this training lab, use the simplest appropriate configuration.
-
-Choose:
-
-Customize
-
-when prompted.
-
-This allows you to explicitly see the identity configuration rather than accepting every default.
-
-Configure:
-
-Directory:
-contoso.local
-
-Select the users/OU that contains:
-
-Alice
-Bob
-
-For sign-in configuration, use the method appropriate to the lab tenant and licensing available.
-
-The objective of this exercise is to demonstrate:
-
-AD DS
-  ↓
-Entra Connect Sync
-  ↓
-Microsoft Entra ID
-
-not to turn this lab into an Entra Connect deployment course.
-
-28. UPN Consideration
-
-You may notice:
-
-alice@contoso.local
-
-is not normally an appropriate cloud sign-in name.
-
-In a real enterprise, the on-premises AD domain and cloud sign-in domain are commonly configured using a verified routable domain.
-
-For example:
-
-On-premises:
-contoso.local
-
-Cloud UPN:
-alice@contoso.com
-
-For this training environment, configure an appropriate verified domain/UPN suffix available in your lab tenant.
-
-This is an important architecture discussion:
-
-The on-premises AD DNS namespace and the Microsoft Entra sign-in namespace do not have to be identical.
-
-29. Validate Synchronization
-
-After configuring Entra Connect, wait for the initial synchronization.
-
-Then open:
-
-Microsoft Entra admin center → Users
-
-Search for:
-
-Alice
-Bob
-
-The users should appear as synchronized from on-premises Active Directory.
-
-You can also check the Entra Connect synchronization status on:
-
-ONPREM-ADSYNC01
-30. Test the Identity Flow
-
-Your final identity flow should now be:
-
-Active Directory
-      |
-      | User created
-      v
-ONPREM-DC01
-      |
-      | Synchronization
-      v
-ONPREM-ADSYNC01
-      |
-      | Entra Connect Sync
-      v
-Microsoft Entra ID
-31. Architecture Validation
-
-You should now have:
-
-                    AZURE TENANT
-                         |
-                 Microsoft Entra ID
-                         ^
-                         |
-                 Entra Connect Sync
-                         |
-                 ONPREM-ADSYNC01
-                         |
-                    Domain Join
-                         |
-                  contoso.local
-                         |
-                  ONPREM-DC01
-                   /          \
-                 AD DS        DNS
-
-The infrastructure is located in:
-
-Connectivity Subscription
-        |
-    Central India
-        |
-   On-Prem VNet
-32. Architecture Decision
-
-Answer the following before continuing.
-
-Question 1
-
-Why did we put the simulated on-premises environment in the Connectivity subscription instead of Production?
-
-Think about:
-
-Workload isolation
-Network ownership
-Shared connectivity
-Security boundaries
-Question 2
-
-Why are AD DS and Entra Connect on separate servers?
-
-Question 3
-
-Why does the Entra Connect server need DNS access to the Domain Controller?
-
-Question 4
-
-Why shouldn't the Domain Controller have a public IP address?
-
-33. Expected Answers
-Question 1
-
-The simulated on-premises environment represents shared hybrid connectivity infrastructure rather than a production application workload.
-
-Question 2
-
-Separating the roles provides better security, operational separation and reflects a more realistic enterprise architecture.
-
-Question 3
-
-Active Directory depends heavily on DNS for locating domain controllers and services. Domain joining and directory operations therefore depend on correct DNS configuration.
-
-Question 4
-
-A Domain Controller is a highly privileged identity infrastructure component. Exposing it directly to the Internet unnecessarily increases the attack surface.
-
-34. Troubleshooting
-DNS does not resolve
-
-Check:
-
-nslookup contoso.local
-
-Verify that ONPREM-ADSYNC01 uses the private IP of ONPREM-DC01 as DNS.
-
-Domain join fails
-
-Check:
-
-nslookup contoso.local
-
-and:
-
-Test-NetConnection <DC-IP> -Port 53
-
-Also verify:
-
-Test-NetConnection <DC-IP> -Port 389
-Entra Connect installation fails
-
-Check:
-
-Server is domain joined.
-Server is Windows Server 2022 or newer supported version.
-Full Desktop Experience is installed.
-Current Entra Connect installer is being used.
-Required outbound connectivity is available.
-Appropriate Microsoft Entra permissions are available.
-
-Microsoft's current prerequisites should be checked before installation because requirements and supported versions can change.
-
-35. Cleanup
-
-Do not delete the resource group yet.
-
-The simulated on-premises network will be required by:
-
-Module 04 — Hybrid Connectivity
-
-and later validation.
-
-Module Complete
-
-You should now have:
-
-ONPREM-DC01
-    |
-    +-- AD DS
-    +-- DNS
-    +-- contoso.local
-
-ONPREM-ADSYNC01
-    |
-    +-- Domain Joined
-    +-- Entra Connect Sync
-
-Microsoft Entra ID
-    |
-    +-- Synchronized test users
-
-Proceed to:
-
-Module 03 — Hub-Spoke Network
+Record the
