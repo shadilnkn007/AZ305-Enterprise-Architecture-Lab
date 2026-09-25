@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {
+      "value": "rg-az305-onprem-ci"
+    },
+    "location": {
+      "value": "centralindia"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.100.0.0/16"
+    },
+    "serverSubnetPrefix": {
+      "value": "10.100.1.0/24"
+    },
+    "gatewaySubnetPrefix": {
+      "value": "10.100.255.0/27"
+    },
+    "domainControllerPrivateIp": {
+      "value": "10.100.1.10"
+    },
+    "domainControllerName": {
+      "value": "ONPREM-DC01"
+    },
+    "entraConnectName": {
+      "value": "ONPREM-ADSYNC01"
+    },
+    "adminUsername": {
+      "value": "az305admin"
+    }
+  }
+}
