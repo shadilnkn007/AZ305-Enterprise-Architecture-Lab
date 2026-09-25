@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {
+      "value": "rg-az305-prod-ci"
+    },
+    "location": {
+      "value": "centralindia"
+    },
+    "vnetName": {
+      "value": "vnet-az305-prod-ci"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.11.0.0/16"
+    },
+    "appGatewaySubnetPrefix": {
+      "value": "10.11.1.0/24"
+    },
+    "applicationSubnetPrefix": {
+      "value": "10.11.2.0/24"
+    },
+    "privateEndpointSubnetPrefix": {
+      "value": "10.11.3.0/24"
+    }
+  }
+}
