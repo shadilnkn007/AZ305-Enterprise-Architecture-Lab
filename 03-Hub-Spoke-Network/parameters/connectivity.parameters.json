@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {
+      "value": "rg-az305-hub-ci"
+    },
+    "location": {
+      "value": "centralindia"
+    },
+    "vnetName": {
+      "value": "vnet-az305-hub-ci"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.10.0.0/16"
+    },
+    "includeGatewaySubnet": {
+      "value": true
+    }
+  }
+}
